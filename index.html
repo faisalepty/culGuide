@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base target="_self">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CultureGuide AI - Your Personal Tourist Assistant</title>
+    <meta name="description" content="AI-powered tourist guide providing cultural activities, local recommendations, and interactive navigation maps">
+    <meta name="keywords" content="tourist guide, cultural activities, AI assistant, travel, navigation, local experiences">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#2563eb",
+                        secondary: "#7c3aed",
+                        accent: "#f59e0b",
+                        dark: "#1e293b",
+                        light: "#f8fafc"
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                        'display': ['Poppins', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-light font-sans text-dark">
+    <!-- Header & Navigation -->
+    <header class="sticky top-0 z-50 bg-white shadow-md">
+        <nav class="container mx-auto px-4 py-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-2 mb-4 md:mb-0">
+                    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                        <i class="fas fa-compass text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-display font-bold text-primary">CulGuide<span class="text-accent">AI</span></h1>
+                </div>
+                
+                <div class="flex flex-wrap justify-center gap-4 md:gap-8">
+                    <a href="javascript:void(0)" onclick="showSection('home')" class="text-dark hover:text-primary font-medium transition-colors duration-200">Home</a>
+                    <a href="javascript:void(0)" onclick="showSection('activities')" class="text-dark hover:text-primary font-medium transition-colors duration-200">Activities</a>
+                    <a href="javascript:void(0)" onclick="showSection('map')" class="text-dark hover:text-primary font-medium transition-colors duration-200">Map</a>
+                    <a href="javascript:void(0)" onclick="showSection('ai-guide')" class="text-dark hover:text-primary font-medium transition-colors duration-200">AI Guide</a>
+                    <a href="javascript:void(0)" onclick="showSection('about')" class="text-dark hover:text-primary font-medium transition-colors duration-200">About</a>
+                </div>
+                
+                <div class="mt-4 md:mt-0">
+                    <button onclick="showSection('ai-guide')" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
+                        <i class="fas fa-robot"></i>
+                        <span>Ask AI Guide</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Hero Section -->
+        <section id="home" class="section active mb-16">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-4xl md:text-5xl font-display font-bold text-dark mb-6">
+                        Discover <span class="text-primary">Cultural Treasures</span> with AI Assistance
+                    </h2>
+                    <p class="text-lg text-gray-600 mb-8">
+                        Your personal AI tourist guide that helps you explore cultural activities, local experiences, and navigate through the area with interactive maps. Get personalized recommendations based on your interests.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button onclick="showSection('ai-guide')" class="bg-primary text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center space-x-2">
+                            <i class="fas fa-comment-alt"></i>
+                            <span>Chat with AI Guide</span>
+                        </button>
+                        <button onclick="showSection('map')" class="bg-white text-primary border-2 border-primary px-8 py-3 rounded-lg font-medium hover:bg-primary hover:text-white transition-colors duration-200 flex items-center justify-center space-x-2">
+                            <i class="fas fa-map-marked-alt"></i>
+                            <span>Explore Map</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="bg-gradient-to-br from-primary to-secondary rounded-2xl p-1">
+                        <img 
+                            src="https://picsum.photos/600/400?random=1" 
+                            alt="Tourists exploring cultural heritage site" 
+                            class="w-full h-auto rounded-2xl"
+                            loading="lazy"
+                        />
+                    </div>
+                    <div class="absolute -bottom-6 -right-6 bg-white p-6 rounded-2xl shadow-xl max-w-xs">
+                        <div class="flex items-center space-x-3 mb-3">
+                            <div class="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
+                                <i class="fas fa-star text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-dark">Top Rated</h4>
+                                <p class="text-sm text-gray-600">Cultural Activities</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-600">"The AI guide recommended the perfect cultural trail for our family vacation!"</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Guide Section -->
+        <section id="ai-guide" class="section hidden mb-16">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-display font-bold text-dark mb-4">Your AI Tourist Assistant</h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">Ask questions about cultural activities, local events, transportation, dining, and get personalized recommendations for your stay.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <div class="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-theater-masks text-primary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-dark mb-3">Cultural Activities</h3>
+                    <p class="text-gray-600 mb-4">Get information about museums, historical sites, traditional performances, and local festivals happening during your visit.</p>
+                    <button onclick="askAIGuide('What cultural activities are available this weekend?')" class="text-primary font-medium hover:text-blue-700 transition-colors duration-200">Ask about activities →</button>
+                </div>
+                
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <div class="w-14 h-14 bg-secondary/10 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-utensils text-secondary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-dark mb-3">Local Experiences</h3>
+                    <p class="text-gray-600 mb-4">Discover authentic local dining, traditional crafts workshops, and unique experiences that tourists often miss.</p>
+                    <button onclick="askAIGuide('Where can I try authentic local cuisine?')" class="text-secondary font-medium hover:text-purple-700 transition-colors duration-200">Ask about food →</button>
+                </div>
+                
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <div class="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-route text-accent text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-dark mb-3">Navigation Help</h3>
+                    <p class="text-gray-600 mb-4">Get directions, transportation options, and the best routes between cultural sites and attractions.</p>
+                    <button onclick="askAIGuide('How do I get from the museum to the old town?')" class="text-accent font-medium hover:text-yellow-700 transition-colors duration-200">Ask for directions →</button>
+                </div>
+            </div>
+            
+            <!-- AI Chat Interface -->
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-primary to-secondary p-6">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-primary text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-white text-xl font-bold">CultureGuide AI Assistant</h3>
+                            <p class="text-white/80 text-sm">Ask me anything about cultural activities and local experiences</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div id="chat-container" class="h-96 overflow-y-auto mb-6 space-y-4 p-4 bg-gray-50 rounded-lg">
+                        <div class="flex justify-start">
+                            <div class="max-w-xs md:max-w-md bg-white rounded-2xl rounded-tl-none p-4 shadow-sm">
+                                <p class="text-gray-800">Hello! I'm your AI tourist guide. I can help you discover cultural activities, local experiences, and provide navigation assistance. What would you like to know about your destination?</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-4">
+                        <input 
+                            type="text" 
+                            id="ai-input" 
+                            placeholder="Ask about cultural activities, local events, or navigation..." 
+                            class="flex-1 border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors duration-200"
+                            onkeypress="handleAIKeyPress(event)"
+                        />
+                        <button onclick="sendAIMessage()" class="bg-primary text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
+                            <i class="fas fa-paper-plane"></i>
+                            <span class="hidden md:inline">Send</span>
+                        </button>
+                    </div>
+                    
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <button onclick="askAIGuide('What are the top cultural attractions?')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors duration-200">Top attractions</button>
+                        <button onclick="askAIGuide('Are there any festivals this month?')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors duration-200">Local festivals</button>
+                        <button onclick="askAIGuide('Best traditional restaurants near me')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors duration-200">Traditional food</button>
+                        <button onclick="askAIGuide('How to get to the historical district?')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors duration-200">Navigation help</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Map Section -->
+        <section id="map" class="section hidden mb-16">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-display font-bold text-dark mb-4">Interactive Cultural Map</h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">Explore cultural sites, museums, historical landmarks, and local experiences on our interactive map. Click on markers for details and directions.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                        <div id="map-container" class="h-96 w-full rounded-2xl"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="bg-white rounded-2xl shadow-xl p-6 h-full">
+                        <h3 class="text-xl font-bold text-dark mb-6">Cultural Points of Interest</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-primary/5 transition-colors duration-200 cursor-pointer" onclick="focusOnMapMarker(1)">
+                                <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-landmark text-primary"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-dark">Historical Museum</h4>
+                                    <p class="text-sm text-gray-600">Open 9AM-6PM • 4.8★</p>
+                                    <p class="text-xs text-gray-500 mt-1">Local history and artifacts</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-secondary/5 transition-colors duration-200 cursor-pointer" onclick="focusOnMapMarker(2)">
+                                <div class="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-theater-masks text-secondary"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-dark">Cultural Theater</h4>
+                                    <p class="text-sm text-gray-600">Shows nightly • 4.7★</p>
+                                    <p class="text-xs text-gray-500 mt-1">Traditional performances</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-accent/5 transition-colors duration-200 cursor-pointer" onclick="focusOnMapMarker(3)">
+                                <div class="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-utensils text-accent"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-dark">Traditional Market</h4>
+                                    <p class="text-sm text-gray-600">6AM-8PM • 4.9★</p>
+                                    <p class="text-xs text-gray-500 mt-1">Local food and crafts</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-primary/5 transition-colors duration-200 cursor-pointer" onclick="focusOnMapMarker(4)">
+                                <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-monument text-primary"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-dark">Heritage Site</h4>
+                                    <p class="text-sm text-gray-600">Open 24/7 • 4.6★</p>
+                                    <p class="text-xs text-gray-500 mt-1">UNESCO World Heritage</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8 pt-6 border-t border-gray-200">
+                            <h4 class="font-bold text-dark mb-3">Map Legend</h4>
+                            <div class="space-y-2">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-4 h-4 bg-primary rounded-full"></div>
+                                    <span class="text-sm text-gray-700">Museums & Galleries</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-4 h-4 bg-secondary rounded-full"></div>
+                                    <span class="text-sm text-gray-700">Cultural Performances</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-4 h-4 bg-accent rounded-full"></div>
+                                    <span class="text-sm text-gray-700">Local Experiences</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white rounded-xl p-6 shadow-lg">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-directions text-primary text-xl"></i>
+                        </div>
+                        <h4 class="font-bold text-dark">Get Directions</h4>
+                    </div>
+                    <p class="text-gray-600 text-sm">Click on any map marker to get walking, driving, or public transport directions to cultural sites.</p>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 shadow-lg">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-filter text-secondary text-xl"></i>
+                        </div>
+                        <h4 class="font-bold text-dark">Filter by Interest</h4>
+                    </div>
+                    <p class="text-gray-600 text-sm">Filter map points by type: museums, festivals, workshops, dining, or historical sites.</p>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 shadow-lg">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clock text-accent text-xl"></i>
+                        </div>
+                        <h4 class="font-bold text-dark">Real-time Info</h4>
+                    </div>
+                    <p class="text-gray-600 text-sm">See opening hours, ticket prices, and current wait times for popular attractions.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cultural Activities Section -->
+        <section id="activities" class="section hidden mb-16">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-display font-bold text-dark mb-4">Cultural Activities & Experiences</h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">Discover the best cultural activities, workshops, tours, and local experiences curated by our AI guide.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                    <div class="relative">
+                        <img 
+                            src="https://picsum.photos/400/250?random=2" 
+                            alt="Traditional craft workshop" 
+                            class="w-full h-48 object-cover"
+                            loading="lazy"
+                        />
+                        <div class="absolute top-4 left-4 bg-primary text-white px-3 py-1 rounded-full text-sm font-medium">Workshop</div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-dark mb-2">Traditional Pottery Workshop</h3>
+                        <p class="text-gray-600 mb-4">Learn ancient pottery techniques from local artisans. 3-hour hands-on experience with materials provided.</p>
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span class="text-accent font-bold">$45</span>
+                                <span class="text-gray-500 text-sm ml-2">per person</span>
+                            </div>
+                            <button onclick="askAIGuide('Tell me more about the pottery workshop')" class="text-primary font-medium hover:text-blue-700 transition-colors duration-200">Ask AI Guide</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                    <div class="relative">
+                        <img 
+                            src="https://picsum.photos/400/250?random=3" 
+                            alt="Historical walking tour" 
+                            class="w-full h-48 object-cover"
+                            loading="lazy"
+                        />
+                        <div class="absolute top-4 left-4 bg-secondary text-white px-3 py-1 rounded-full text-sm font-medium">Tour</div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-dark mb-2">Historical District Walking Tour</h3>
+                        <p class="text-gray-600 mb-4">Guided tour through the old town with stories about architecture, legends, and local history.</p>
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span class="text-accent font-bold">$25</span>
+                                <span class="text-gray-500 text-sm ml-2">per person</span>
+                            </div>
+                            <button onclick="askAIGuide('What will I see on the historical walking tour?')" class="text-primary font-medium hover:text-blue-700 transition-colors duration-200">Ask AI Guide</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                    <div class="relative">
+                        <img 
+                            src="https://picsum.photos/400/250?random=4" 
+                            alt="Cultural festival performance" 
+                            class="w-full h-48 object-cover"
+                            loading="lazy"
+                        />
+                        <div class="absolute top-4 left-4 bg-accent text-white px-3 py-1 rounded-full text-sm font-medium">Festival</div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-dark mb-2">Traditional Dance Festival</h3>
+                        <p class="text-gray-600 mb-4">Annual cultural festival featuring traditional dances, music, and costumes from the region.</p>
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <span class="text-accent font-bold">Free</span>
+                                <span class="text-gray-500 text-sm ml-2">entry</span>
+                            </div>
+                            <button onclick="askAIGuide('When is the traditional dance festival?')" class="text-primary font-medium hover:text-blue-700 transition-colors duration-200">Ask AI Guide</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 text-white">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <h3 class="text-2xl font-bold mb-4">Personalized Cultural Itinerary</h3>
+                        <p class="mb-6">Let our AI guide create a personalized cultural itinerary based on your interests, available time, and budget.</p>
+                        <button onclick="askAIGuide('Can you create a cultural itinerary for 3 days?')" class="bg-white text-primary px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors duration-200">Get Personalized Itinerary</button>
+                    </div>
+                    <div class="bg-white/20 rounded-xl p-6">
+                        <h4 class="font-bold mb-3">Itinerary Features:</h4>
+                        <ul class="space-y-2">
+                            <li class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Based on your interests</span>
+                            </li>
+                            <li class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Optimized route planning</span>
+                            </li>
+                            <li class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Budget considerations</span>
+                            </li>
+                            <li class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Transportation options</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="section hidden mb-16">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-display font-bold text-dark mb-4">About CultureGuide AI</h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">We combine artificial intelligence with local expertise to provide tourists with the best cultural experiences and navigation assistance.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
+                <div>
+                    <h3 class="text-2xl font-bold text-dark mb-6">Our Mission</h3>
+                    <p class="text-gray-600 mb-6">We believe that tourism should be about authentic cultural experiences, not just checking landmarks off a list. Our AI guide helps tourists discover the soul of a destination through its cultural activities, traditions, and local interactions.</p>
+                    <p class="text-gray-600 mb-8">By combining AI technology with curated local knowledge, we provide personalized recommendations that help tourists have meaningful experiences while supporting local cultural preservation.</p>
+                    
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <div class="text-3xl font-bold text-primary mb-2">500+</div>
+                            <div class="text-gray-700">Cultural Activities</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <div class="text-3xl font-bold text-secondary mb-2">24/7</div>
+                            <div class="text-gray-700">AI Assistance</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="relative">
+                    <img 
+                        src="https://picsum.photos/500/350?random=5" 
+                        alt="Tourists enjoying cultural experience" 
+                        class="w-full rounded-2xl shadow-xl"
+                        loading="lazy"
+                    />
+                    <div class="absolute -bottom-6 -left-6 bg-white p-6 rounded-2xl shadow-lg max-w-xs">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                                <i class="fas fa-award text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-dark">Award Winning</h4>
+                                <p class="text-sm text-gray-600">Best Tourism Innovation 2023</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gray-50 rounded-2xl p-8">
+                <h3 class="text-2xl font-bold text-dark mb-8 text-center">How It Works</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl">1</div>
+                        </div>
+                        <h4 class="text-xl font-bold text-dark mb-3">Ask Your AI Guide</h4>
+                        <p class="text-gray-600">Chat with our AI assistant about your interests, questions, and travel plans.</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <div class="w-12 h-12 bg-secondary rounded-full flex items-center justify-center text-white font-bold text-xl">2</div>
+                        </div>
+                        <h4 class="text-xl font-bold text-dark mb-3">Get Personalized Recommendations</h4>
+                        <p class="text-gray-600">Receive tailored suggestions for cultural activities, dining, and experiences.</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <div class="w-12 h-12 bg-accent rounded-full flex items-center justify-center text-white font-bold text-xl">3</div>
+                        </div>
+                        <h4 class="text-xl font-bold text-dark mb-3">Navigate & Explore</h4>
+                        <p class="text-gray-600">Use our interactive map to navigate between cultural sites and plan your route.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white mt-16">
+        <div class="container mx-auto px-4 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-6">
+                        <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                            <i class="fas fa-compass text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-display font-bold">CultureGuide<span class="text-accent">AI</span></h3>
+                    </div>
+                    <p class="text-gray-400 mb-6">Your AI-powered companion for discovering cultural activities and navigating destinations.</p>
+                    <div class="flex space-x-4">
+                        <a href="javascript:void(0)" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-primary transition-colors duration-200">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="javascript:void(0)" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-primary transition-colors duration-200">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="javascript:void(0)" class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-primary transition-colors duration-200">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-bold mb-6">Quick Links</h4>
+                    <ul class="space-y-3">
+                        <li><a href="javascript:void(0)" onclick="showSection('home')" class="text-gray-400 hover:text-white transition-colors duration-200">Home</a></li>
+                        <li><a href="javascript:void(0)" onclick="showSection('activities')" class="text-gray-400 hover:text-white transition-colors duration-200">Cultural Activities</a></li>
+                        <li><a href="javascript:void(0)" onclick="showSection('map')" class="text-gray-400 hover:text-white transition-colors duration-200">Interactive Map</a></li>
+                        <li><a href="javascript:void(0)" onclick="showSection('ai-guide')" class="text-gray-400 hover:text-white transition-colors duration-200">AI Guide</a></li>
+                        <li><a href="javascript:void(0)" onclick="showSection('about')" class="text-gray-400 hover:text-white transition-colors duration-200">About Us</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-bold mb-6">Cultural Categories</h4>
+                    <ul class="space-y-3">
+                        <li><a href="javascript:void(0)" class="text-gray-400 hover:text-white transition-colors duration-200">Museums & Galleries</a></li>
+                        <li><a href="javascript:void(0)" class="text-gray-400 hover:text-white transition-colors duration-200">Historical Sites</a></li>
+                        <li><a href="javascript:void(0)" class="text-gray-400 hover:text-white transition-colors duration-200">Traditional Workshops</a></li>
+                        <li><a href="javascript:void(0)" class="text-gray-400 hover:text-white transition-colors duration-200">Local Festivals</a></li>
+                        <li><a href="javascript:void(0)" class="text-gray-400 hover:text-white transition-colors duration-200">Cultural Performances</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-bold mb-6">Contact & Support</h4>
+                    <ul class="space-y-3">
+                        <li class="flex items-start space-x-3">
+                            <i class="fas fa-envelope text-primary mt-1"></i>
+                            <span class="text-gray-400">support@cultureguide.ai</span>
+                        </li>
+                        <li class="flex items-start space-x-3">
+                            <i class="fas fa-phone text-primary mt-1"></i>
+                            <span class="text-gray-400">+1 (555) 123-4567</span>
+                        </li>
+                        <li class="flex items-start space-x-3">
+                            <i class="fas fa-map-marker-alt text-primary mt-1"></i>
+                            <span class="text-gray-400">123 Culture Street, Heritage City</span>
+                        </li>
+                    </ul>
+                    
+                    <div class="mt-8">
+                        <h5 class="font-bold mb-3">Subscribe to Updates</h5>
+                        <div class="flex">
+                            <input type="email" placeholder="Your email" class="flex-1 bg-gray-800 text-white px-4 py-2 rounded-l-lg focus:outline-none">
+                            <button class="bg-primary px-4 py-2 rounded-r-lg font-medium hover:bg-blue-700 transition-colors duration-200">Subscribe</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-12 pt-8 text-center text-gray-500 text-sm">
+                <p>&copy; 2023 CultureGuide AI. All rights reserved. | <a href="javascript:void(0)" class="hover:text-white transition-colors duration-200">Privacy Policy</a> | <a href="javascript:void(0)" class="hover:text-white transition-colors duration-200">Terms of Service</a></p>
+                <p class="mt-2">This website uses AI to provide tourist information. Always verify critical information with local sources.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Define data at the beginning
+        const culturalActivities = [
+            { "id": 1, "name": "Historical Museum", "type": "museum", "lat": 40.7128, "lng": -74.0060, "description": "Local history and artifacts museum" },
+            { "id": 2, "name": "Cultural Theater", "type": "performance", "lat": 40.7145, "lng": -74.0082, "description": "Traditional performances venue" },
+            { "id": 3, "name": "Traditional Market", "type": "local", "lat": 40.7110, "lng": -74.0095, "description": "Local food and crafts market" },
+            { "id": 4, "name": "Heritage Site", "type": "historical", "lat": 40.7135, "lng": -74.0045, "description": "UNESCO World Heritage site" },
+            { "id": 5, "name": "Art Gallery", "type": "museum", "lat": 40.7150, "lng": -74.0070, "description": "Contemporary local art gallery" },
+            { "id": 6, "name": "Craft Workshop", "type": "workshop", "lat": 40.7105, "lng": -74.0055, "description": "Traditional craft workshops" }
+        ];
+
+        const aiResponses = {
+            "greeting": "Hello! I'm your AI tourist guide. I can help you discover cultural activities, local experiences, and provide navigation assistance. What would you like to know about your destination?",
+            "activities": "Based on your interests, I recommend these cultural activities: 1) Historical Museum (open 9AM-6PM), 2) Traditional Pottery Workshop (hands-on experience), 3) Cultural Theater (nightly performances). Would you like more details about any of these?",
+            "food": "For authentic local cuisine, I recommend: 1) Traditional Market for street food, 2) Family-run restaurant in the old town, 3) Cooking class to learn local recipes. The market is open daily from 6AM-8PM.",
+            "navigation": "To get from the museum to the old town: Take bus #5 from Museum Street (every 15 mins, 10-minute ride) or walk (20 minutes through the cultural district). I can show you the route on the map.",
+            "festivals": "This month's cultural festivals: 1) Traditional Dance Festival (weekend, free entry), 2) Food & Culture Fair (next Saturday), 3) Heritage Day (guided tours). Check the activities section for details.",
+            "itinerary": "For a 3-day cultural itinerary: Day 1: Historical sites & museum. Day 2: Workshop & local market. Day 3: Cultural performance & heritage tour. I can customize this based on your preferences."
+        };
+
+        let map = null;
+        let markers = [];
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMap();
+            showSection('home');
+        });
+
+        // Section navigation
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+                targetSection.classList.add('active');
+                
+                // If showing map section, ensure map is properly sized
+                if (sectionId === 'map' && map) {
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 100);
+                }
+            }
+            
+            // Update active navigation
+            document.querySelectorAll('nav a').forEach(link => {
+                link.classList.remove('text-primary', 'font-bold');
+                link.classList.add('text-dark');
+            });
+            
+            // Highlight current section in navigation
+            const activeLink = document.querySelector(`a[onclick="showSection('${sectionId}')"]`);
+            if (activeLink) {
+                activeLink.classList.remove('text-dark');
+                activeLink.classList.add('text-primary', 'font-bold');
+            }
+        }
+
+        // Initialize Leaflet map
+        function initializeMap() {
+            const mapContainer = document.getElementById('map-container');
+            if (!mapContainer) return;
+            
+            // Default coordinates (New York for example)
+            map = L.map('map-container').setView([40.7128, -74.0060], 14);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            // Add markers for cultural activities
+            culturalActivities.forEach(activity => {
+                let markerColor;
+                switch(activity.type) {
+                    case 'museum': markerColor = '#2563eb'; break;
+                    case 'performance': markerColor = '#7c3aed'; break;
+                    case 'local': markerColor = '#f59e0b'; break;
+                    default: markerColor = '#10b981';
+                }
+                
+                const marker = L.marker([activity.lat, activity.lng], {
+                    icon: L.divIcon({
+                        html: `<div style="background-color: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                        iconSize: [20, 20],
+                        className: 'custom-marker'
+                    })
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <div class="p-2">
+                        <h3 class="font-bold text-lg">${activity.name}</h3>
+                        <p class="text-gray-600">${activity.description}</p>
+                        <button onclick="askAIGuide('Tell me more about ${activity.name}')" class="mt-2 text-primary hover:text-blue-700 text-sm font-medium">Ask AI Guide</button>
+                    </div>
+                `);
+                
+                markers.push({ id: activity.id, marker: marker, lat: activity.lat, lng: activity.lng });
+            });
+        }
+
+        // Focus on specific map marker
+        function focusOnMapMarker(markerId) {
+            const markerData = markers.find(m => m.id === markerId);
+            if (markerData && map) {
+                map.setView([markerData.lat, markerData.lng], 16);
+                markerData.marker.openPopup();
+            }
+        }
+
+        // AI Guide functionality
+        function askAIGuide(question) {
+            const input = document.getElementById('ai-input');
+            if (input) {
+                input.value = question;
+            }
+            sendAIMessage();
+        }
+
+        function sendAIMessage() {
+            const input = document.getElementById('ai-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessageToChat(message, 'user');
+            
+            // Clear input
+            input.value = '';
+            
+            // Simulate AI thinking
+            setTimeout(() => {
+                const aiResponse = generateAIResponse(message);
+                addMessageToChat(aiResponse, 'ai');
+            }, 1000);
+        }
+
+        function handleAIKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendAIMessage();
+            }
+        }
+
+        function addMessageToChat(message, sender) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            
+            if (sender === 'user') {
+                messageDiv.className = 'flex justify-end';
+                messageDiv.innerHTML = `
+                    <div class="max-w-xs md:max-w-md bg-primary text-white rounded-2xl rounded-tr-none p-4 shadow-sm">
+                        <p>${message}</p>
+                    </div>
+                `;
+            } else {
+                messageDiv.className = 'flex justify-start';
+                messageDiv.innerHTML = `
+                    <div class="max-w-xs md:max-w-md bg-white rounded-2xl rounded-tl-none p-4 shadow-sm">
+                        <p class="text-gray-800">${message}</p>
+                    </div>
+                `;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function generateAIResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            if (lowerMessage.includes('activity') || lowerMessage.includes('what to do')) {
+                return aiResponses.activities;
+            } else if (lowerMessage.includes('food') || lowerMessage.includes('restaurant') || lowerMessage.includes('eat')) {
+                return aiResponses.food;
+            } else if (lowerMessage.includes('how to get') || lowerMessage.includes('direction') || lowerMessage.includes('route')) {
+                return aiResponses.navigation;
+            } else if (lowerMessage.includes('festival') || lowerMessage.includes('event')) {
+                return aiResponses.festivals;
+            } else if (lowerMessage.includes('itinerary') || lowerMessage.includes('plan') || lowerMessage.includes('schedule')) {
+                return aiResponses.itinerary;
+            } else {
+                return "I can help you with information about cultural activities, local experiences, navigation, festivals, and creating personalized itineraries. Could you please be more specific about what you'd like to know?";
+            }
+        }
+    </script>
+</body>
+</html>
