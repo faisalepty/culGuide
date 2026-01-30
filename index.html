@@ -10,7 +10,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="config.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -29,6 +31,8 @@
                 }
             }
         }
+        // Expose API key from environment via CONFIG if present
+        window.OPENROUTER_API_KEY = (typeof CONFIG !== 'undefined' && CONFIG.openrouter && CONFIG.openrouter.apiKey) ? CONFIG.openrouter.apiKey : undefined;
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -52,7 +56,11 @@
                     <a href="javascript:void(0)" onclick="showSection('about')" class="text-dark hover:text-primary font-medium transition-colors duration-200">About</a>
                 </div>
                 
-                <div class="mt-4 md:mt-0">
+                <div class="mt-4 md:mt-0 flex items-center space-x-4">
+                    <div id="location-status" class="hidden items-center space-x-2 text-sm">
+                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <span class="text-gray-600">Getting location...</span>
+                    </div>
                     <button onclick="showSection('ai-guide')" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
                         <i class="fas fa-robot"></i>
                         <span>Ask AI Guide</span>
@@ -124,7 +132,7 @@
                     </div>
                     <h3 class="text-xl font-bold text-dark mb-3">Cultural Activities</h3>
                     <p class="text-gray-600 mb-4">Get information about museums, historical sites, traditional performances, and local festivals happening during your visit.</p>
-                    <button onclick="askAIGuide('What cultural activities are available this weekend?')" class="text-primary font-medium hover:text-blue-700 transition-colors duration-200">Ask about activities →</button>
+                    <button onclick="askAIGuide('What cultural activities are near me?')" class="text-primary font-medium hover:text-blue-700 transition-colors duration-200">Ask about nearby activities →</button>
                 </div>
                 
                 <div class="bg-white rounded-2xl p-6 shadow-lg">
@@ -184,10 +192,10 @@
                     </div>
                     
                     <div class="mt-4 flex flex-wrap gap-2">
-                        <button onclick="askAIGuide('What are the top cultural attractions?')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors duration-200">Top attractions</button>
+                        <button onclick="askAIGuide('What cultural activities are near me?')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors duration-200">Near me</button>
                         <button onclick="askAIGuide('Are there any festivals this month?')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors duration-200">Local festivals</button>
                         <button onclick="askAIGuide('Best traditional restaurants near me')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors duration-200">Traditional food</button>
-                        <button onclick="askAIGuide('How to get to the historical district?')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors duration-200">Navigation help</button>
+                        <button onclick="askAIGuide('Where am I and what can I do here?')" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors duration-200">My location</button>
                     </div>
                 </div>
             </div>
@@ -580,198 +588,6 @@
     </footer>
 
     <!-- JavaScript -->
-    <script>
-        // Define data at the beginning
-        const culturalActivities = [
-            { "id": 1, "name": "Historical Museum", "type": "museum", "lat": 40.7128, "lng": -74.0060, "description": "Local history and artifacts museum" },
-            { "id": 2, "name": "Cultural Theater", "type": "performance", "lat": 40.7145, "lng": -74.0082, "description": "Traditional performances venue" },
-            { "id": 3, "name": "Traditional Market", "type": "local", "lat": 40.7110, "lng": -74.0095, "description": "Local food and crafts market" },
-            { "id": 4, "name": "Heritage Site", "type": "historical", "lat": 40.7135, "lng": -74.0045, "description": "UNESCO World Heritage site" },
-            { "id": 5, "name": "Art Gallery", "type": "museum", "lat": 40.7150, "lng": -74.0070, "description": "Contemporary local art gallery" },
-            { "id": 6, "name": "Craft Workshop", "type": "workshop", "lat": 40.7105, "lng": -74.0055, "description": "Traditional craft workshops" }
-        ];
-
-        const aiResponses = {
-            "greeting": "Hello! I'm your AI tourist guide. I can help you discover cultural activities, local experiences, and provide navigation assistance. What would you like to know about your destination?",
-            "activities": "Based on your interests, I recommend these cultural activities: 1) Historical Museum (open 9AM-6PM), 2) Traditional Pottery Workshop (hands-on experience), 3) Cultural Theater (nightly performances). Would you like more details about any of these?",
-            "food": "For authentic local cuisine, I recommend: 1) Traditional Market for street food, 2) Family-run restaurant in the old town, 3) Cooking class to learn local recipes. The market is open daily from 6AM-8PM.",
-            "navigation": "To get from the museum to the old town: Take bus #5 from Museum Street (every 15 mins, 10-minute ride) or walk (20 minutes through the cultural district). I can show you the route on the map.",
-            "festivals": "This month's cultural festivals: 1) Traditional Dance Festival (weekend, free entry), 2) Food & Culture Fair (next Saturday), 3) Heritage Day (guided tours). Check the activities section for details.",
-            "itinerary": "For a 3-day cultural itinerary: Day 1: Historical sites & museum. Day 2: Workshop & local market. Day 3: Cultural performance & heritage tour. I can customize this based on your preferences."
-        };
-
-        let map = null;
-        let markers = [];
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeMap();
-            showSection('home');
-        });
-
-        // Section navigation
-        function showSection(sectionId) {
-            // Hide all sections
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.add('hidden');
-                section.classList.remove('active');
-            });
-            
-            // Show selected section
-            const targetSection = document.getElementById(sectionId);
-            if (targetSection) {
-                targetSection.classList.remove('hidden');
-                targetSection.classList.add('active');
-                
-                // If showing map section, ensure map is properly sized
-                if (sectionId === 'map' && map) {
-                    setTimeout(() => {
-                        map.invalidateSize();
-                    }, 100);
-                }
-            }
-            
-            // Update active navigation
-            document.querySelectorAll('nav a').forEach(link => {
-                link.classList.remove('text-primary', 'font-bold');
-                link.classList.add('text-dark');
-            });
-            
-            // Highlight current section in navigation
-            const activeLink = document.querySelector(`a[onclick="showSection('${sectionId}')"]`);
-            if (activeLink) {
-                activeLink.classList.remove('text-dark');
-                activeLink.classList.add('text-primary', 'font-bold');
-            }
-        }
-
-        // Initialize Leaflet map
-        function initializeMap() {
-            const mapContainer = document.getElementById('map-container');
-            if (!mapContainer) return;
-            
-            // Default coordinates (New York for example)
-            map = L.map('map-container').setView([40.7128, -74.0060], 14);
-            
-            // Add OpenStreetMap tiles
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
-            
-            // Add markers for cultural activities
-            culturalActivities.forEach(activity => {
-                let markerColor;
-                switch(activity.type) {
-                    case 'museum': markerColor = '#2563eb'; break;
-                    case 'performance': markerColor = '#7c3aed'; break;
-                    case 'local': markerColor = '#f59e0b'; break;
-                    default: markerColor = '#10b981';
-                }
-                
-                const marker = L.marker([activity.lat, activity.lng], {
-                    icon: L.divIcon({
-                        html: `<div style="background-color: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
-                        iconSize: [20, 20],
-                        className: 'custom-marker'
-                    })
-                }).addTo(map);
-                
-                marker.bindPopup(`
-                    <div class="p-2">
-                        <h3 class="font-bold text-lg">${activity.name}</h3>
-                        <p class="text-gray-600">${activity.description}</p>
-                        <button onclick="askAIGuide('Tell me more about ${activity.name}')" class="mt-2 text-primary hover:text-blue-700 text-sm font-medium">Ask AI Guide</button>
-                    </div>
-                `);
-                
-                markers.push({ id: activity.id, marker: marker, lat: activity.lat, lng: activity.lng });
-            });
-        }
-
-        // Focus on specific map marker
-        function focusOnMapMarker(markerId) {
-            const markerData = markers.find(m => m.id === markerId);
-            if (markerData && map) {
-                map.setView([markerData.lat, markerData.lng], 16);
-                markerData.marker.openPopup();
-            }
-        }
-
-        // AI Guide functionality
-        function askAIGuide(question) {
-            const input = document.getElementById('ai-input');
-            if (input) {
-                input.value = question;
-            }
-            sendAIMessage();
-        }
-
-        function sendAIMessage() {
-            const input = document.getElementById('ai-input');
-            const message = input.value.trim();
-            
-            if (!message) return;
-            
-            // Add user message to chat
-            addMessageToChat(message, 'user');
-            
-            // Clear input
-            input.value = '';
-            
-            // Simulate AI thinking
-            setTimeout(() => {
-                const aiResponse = generateAIResponse(message);
-                addMessageToChat(aiResponse, 'ai');
-            }, 1000);
-        }
-
-        function handleAIKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendAIMessage();
-            }
-        }
-
-        function addMessageToChat(message, sender) {
-            const chatContainer = document.getElementById('chat-container');
-            const messageDiv = document.createElement('div');
-            
-            if (sender === 'user') {
-                messageDiv.className = 'flex justify-end';
-                messageDiv.innerHTML = `
-                    <div class="max-w-xs md:max-w-md bg-primary text-white rounded-2xl rounded-tr-none p-4 shadow-sm">
-                        <p>${message}</p>
-                    </div>
-                `;
-            } else {
-                messageDiv.className = 'flex justify-start';
-                messageDiv.innerHTML = `
-                    <div class="max-w-xs md:max-w-md bg-white rounded-2xl rounded-tl-none p-4 shadow-sm">
-                        <p class="text-gray-800">${message}</p>
-                    </div>
-                `;
-            }
-            
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function generateAIResponse(message) {
-            const lowerMessage = message.toLowerCase();
-            
-            if (lowerMessage.includes('activity') || lowerMessage.includes('what to do')) {
-                return aiResponses.activities;
-            } else if (lowerMessage.includes('food') || lowerMessage.includes('restaurant') || lowerMessage.includes('eat')) {
-                return aiResponses.food;
-            } else if (lowerMessage.includes('how to get') || lowerMessage.includes('direction') || lowerMessage.includes('route')) {
-                return aiResponses.navigation;
-            } else if (lowerMessage.includes('festival') || lowerMessage.includes('event')) {
-                return aiResponses.festivals;
-            } else if (lowerMessage.includes('itinerary') || lowerMessage.includes('plan') || lowerMessage.includes('schedule')) {
-                return aiResponses.itinerary;
-            } else {
-                return "I can help you with information about cultural activities, local experiences, navigation, festivals, and creating personalized itineraries. Could you please be more specific about what you'd like to know?";
-            }
-        }
-    </script>
+    <script type="module" src="./js/app.js"></script>
 </body>
 </html>

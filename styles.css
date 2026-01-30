@@ -1,0 +1,68 @@
+/* Additional styles for culGuide */
+
+.user-location-marker {
+    z-index: 1000;
+}
+
+.custom-marker {
+    z-index: 999;
+}
+
+/* Loading animation for location detection */
+.location-loading {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Map container responsive adjustments */
+#map-container {
+    min-height: 400px;
+}
+
+@media (max-width: 768px) {
+    #map-container {
+        min-height: 300px;
+    }
+}
+
+/* Chat container scrollbar styling */
+#chat-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+#chat-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+#chat-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+#chat-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Location status indicator */
+#location-status {
+    transition: all 0.3s ease;
+}
+
+/* Activity cards hover effects */
+.activity-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.activity-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
