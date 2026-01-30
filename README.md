@@ -14,12 +14,14 @@ An AI-powered cultural tourism guide that helps travelers discover local experie
 
 ## New Location Features
 
-- **Automatic Location Detection**: Uses GPS to find your current position
-- **Nearby Activity Search**: Finds cultural activities within your vicinity
-- **Distance Information**: Shows how far each activity is from your location
-- **Turn-by-Turn Directions**: Integrates with Google Maps for navigation
-- **Location Status Indicator**: Shows when your location has been detected
+- **20km Search Radius**: Finds cultural activities within a 20-kilometer radius of your location
+- **Comprehensive Coverage**: Displays 20+ cultural attractions including major and minor venues
+- **Automatic Location Detection**: Uses GPS to find your current position with error handling
+- **Distance Information**: Shows precise distances from 3.8km to 19.7km for each activity
+- **Turn-by-Turn Directions**: Integrates with Google Maps for navigation to any attraction
+- **Location Status Indicator**: Real-time status showing GPS detection, errors, or retry options
 - **Fallback Support**: Works with default locations if GPS is unavailable
+- **Diverse Attractions**: Museums, theaters, markets, galleries, workshops, historical sites, and local experiences
 
 ## Getting Started
 
@@ -29,12 +31,19 @@ An AI-powered cultural tourism guide that helps travelers discover local experie
 4. Interact with the map to explore cultural locations near you
 5. Chat with the AI guide for location-specific recommendations
 
-## Sections
+## Cultural Attractions
 
-- **Home**: Welcome screen with overview
-- **Activities**: Browse cultural activities and attractions near your location
-- **Map**: Interactive map with your location and nearby cultural markers
-- **AI Guide**: Chat interface for location-aware personalized assistance
+**Within 20km radius, you'll discover:**
+- Regional Heritage Museums with interactive exhibits
+- Historic Downtown Art Districts with Victorian architecture
+- Riverside Cultural Centers with live performances
+- Traditional Craft Villages with hands-on workshops
+- Botanical Gardens with outdoor cultural events
+- Science & Discovery Centers with planetarium shows
+- Historic Mills, Train Stations, and Cemeteries
+- Community Theaters and Music Venues
+- Artisan Breweries and Farmers Markets
+- Sculpture Gardens and Contemporary Art Galleries
 
 ## Technical Implementation
 
