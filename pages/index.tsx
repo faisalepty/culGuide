@@ -12,6 +12,13 @@ import { useLocation } from '../lib/useLocation'
 export default function Home() {
   const [activeSection, setActiveSection] = useState('home')
   const { userLocation, locationStatus, culturalActivities, getCurrentLocation } = useLocation()
+  const [chatMessage, setChatMessage] = useState('')
+
+  const handleAskAboutLocation = (locationName: string) => {
+    const message = `Tell me more about ${locationName}`
+    setChatMessage(message)
+    setActiveSection('ai-guide')
+  }
 
   return (
     <>
@@ -33,8 +40,8 @@ export default function Home() {
         
         <main className="container mx-auto px-4 py-8">
           {activeSection === 'home' && <HeroSection setActiveSection={setActiveSection} />}
-          {activeSection === 'ai-guide' && <AIGuideSection culturalActivities={culturalActivities} userLocation={userLocation} />}
-          {activeSection === 'map' && <MapSection culturalActivities={culturalActivities} userLocation={userLocation} />}
+          {activeSection === 'ai-guide' && <AIGuideSection culturalActivities={culturalActivities} userLocation={userLocation} initialMessage={chatMessage} />}
+          {activeSection === 'map' && <MapSection culturalActivities={culturalActivities} userLocation={userLocation} onAskAboutLocation={handleAskAboutLocation} />}
           {activeSection === 'activities' && <ActivitiesSection />}
           {activeSection === 'about' && <AboutSection />}
         </main>

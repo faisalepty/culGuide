@@ -1,15 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import 'leaflet/dist/leaflet.css'
-import L from 'leaflet'
-
-// Fix for default marker icons
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-})
 
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false })
 const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false })
@@ -19,10 +10,25 @@ const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ss
 interface MapSectionProps {
   culturalActivities: any[]
   userLocation: { lat: number; lng: number } | null
+  onAskAboutLocation?: (locationName: string) => void
 }
 
-export default function MapSection({ culturalActivities, userLocation }: MapSectionProps) {
+export default function MapSection({ culturalActivities, userLocation, onAskAboutLocation }: MapSectionProps) {
   const [fullScreen, setFullScreen] = useState(false)
+
+  // Initialize Leaflet icon configuration on client side only
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      import('leaflet').then((L) => {
+        delete (L.Icon.Default.prototype as any)._getIconUrl
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+        })
+      })
+    }
+  }, [])
 
   const centerLat = userLocation ? userLocation.lat : 40.7128
   const centerLng = userLocation ? userLocation.lng : -74.0060
@@ -66,12 +72,20 @@ export default function MapSection({ culturalActivities, userLocation }: MapSect
               <p className="text-gray-600">{activity.description}</p>
               {activity.distance && <p className="text-sm text-gray-500">Distance: {activity.distance}</p>}
               {activity.rating && <p className="text-sm text-yellow-600">Rating: {activity.rating}★</p>}
-              <button 
-                onClick={() => getDirections(activity.lat, activity.lng)}
-                className="mt-2 text-green-600 hover:text-green-700 text-sm font-medium"
-              >
-                Get Directions
-              </button>
+              <div className="mt-2 flex gap-2 flex-wrap">
+                <button 
+                  onClick={() => onAskAboutLocation?.(activity.name)}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  Ask CulGuide
+                </button>
+                <button 
+                  onClick={() => getDirections(activity.lat, activity.lng)}
+                  className="text-green-600 hover:text-green-700 text-sm font-medium"
+                >
+                  Get Directions
+                </button>
+              </div>
             </div>
           </Popup>
         </Marker>

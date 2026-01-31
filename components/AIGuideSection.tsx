@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 interface Message {
+  id?: string
   role: 'assistant' | 'user'
   content: string
 }
@@ -16,15 +17,26 @@ interface AIGuideSectionProps {
     rating?: number
   }>
   userLocation: { lat: number; lng: number } | null
+  initialMessage?: string
 }
 
-export default function AIGuideSection({ culturalActivities, userLocation }: AIGuideSectionProps) {
+export default function AIGuideSection({ culturalActivities, userLocation, initialMessage }: AIGuideSectionProps) {
   const [messages, setMessages] = useState<Message[]>([{
     role: 'assistant',
     content: "Hello! I'm your AI tourist guide. I can help you discover cultural activities, local experiences, and provide navigation assistance. What would you like to know about your destination?"
   }])
   const [input, setInput] = useState('')
   const chatRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (initialMessage && input === '') {
+      setInput(initialMessage)
+      // Auto-send the initial message
+      setTimeout(() => {
+        sendAIMessage(initialMessage)
+      }, 100)
+    }
+  }, [initialMessage])
 
   useEffect(() => {
     if (chatRef.current) {
@@ -34,13 +46,13 @@ export default function AIGuideSection({ culturalActivities, userLocation }: AIG
 
   const quickReply = (text: string) => {
     setInput(text)
-    handleSend(text)
+    sendAIMessage(text)
   }
 
   const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault()
-      handleSend()
+      sendAIMessage()
     }
   }
 
@@ -51,39 +63,83 @@ export default function AIGuideSection({ culturalActivities, userLocation }: AIG
     return `Here are a few nearby options: ${list}. Ask me for directions to any of them.`
   }
 
-  const generateAssistantReply = (text: string): string => {
-    const t = text.toLowerCase()
-    if (t.includes('near me') || t.includes('nearby') || t.includes('where am i')) {
-      if (!userLocation) {
-        return 'I need access to your location to find nearby cultural activities. Please enable location services in your browser.'
-      }
-      return `${formatNearbySummary()}`
-    }
-    if (t.includes('festival')) {
-      return 'Local festivals often happen on weekends and holidays. Check community calendars and cultural centers. I can suggest venues on the map section where festivals are commonly hosted.'
-    }
-    if (t.includes('food') || t.includes('restaurant')) {
-      return 'For authentic cuisine, look for traditional markets and family-run eateries near cultural districts. Ask for regional specialties and seasonal dishes.'
-    }
-    if (t.includes('how do i get') || t.includes('directions')) {
-      return 'Open the Map section, click a marker, and use the Get Directions button for turn-by-turn navigation from your current location.'
-    }
-    return 'I can help with cultural activities, local experiences, and navigation. Try asking: "What cultural activities are near me?" or "Create a 2-day cultural itinerary".'
-  }
-
-  const handleSend = (preset?: string) => {
+  // Client-side AI call that mirrors the flow in js/chat.js; falls back to local generator
+  const sendAIMessage = async (preset?: string) => {
     const text = (preset ?? input).trim()
     if (!text) return
 
-    const nextMessages: Message[] = [...messages, { role: 'user', content: text }]
-    setMessages(nextMessages)
-    setInput('')
+    const userId = `u_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    const thinkingId = `t_${Date.now()}_${Math.random().toString(36).slice(2)}`
 
-    // Simulated assistant reply using local context
-    const reply = generateAssistantReply(text)
-    setTimeout(() => {
-      setMessages((m) => [...m, { role: 'assistant', content: reply }])
-    }, 400)
+    setMessages((m) => [...m, { id: userId, role: 'user', content: text }])
+    setInput('')
+    setMessages((m) => [...m, { id: thinkingId, role: 'assistant', content: 'Thinking…' }])
+
+    try {
+      // Attempt to use OpenRouter (same as js/chat.js)
+      const apiKey = "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"
+      if (!apiKey) {
+        // Fallback to local generator if no key
+        const fallback = generateAIResponse(text, userLocation ?? undefined as any, culturalActivities)
+        setMessages((m) => m.map(msg => msg.id === thinkingId ? { ...msg, content: fallback } : msg))
+        return
+      }
+
+      const call1 = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ model: 'openai/gpt-oss-120b:free', messages: [{ role: 'user', content: text }], reasoning: { enabled: true } })
+      })
+
+      const result1 = await call1.json()
+      const assistantMessage = result1?.choices?.[0]?.message
+      if (!assistantMessage) throw new Error('No response from model')
+
+      const messagesForSecond = [
+        { role: 'user', content: text },
+        { role: 'assistant', content: assistantMessage.content, reasoning_details: assistantMessage.reasoning_details },
+        { role: 'user', content: 'Are you sure? Think carefully.' }
+      ]
+
+      const call2 = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ model: 'openai/gpt-oss-120b:free', messages: messagesForSecond })
+      })
+
+      const result2 = await call2.json()
+      const finalMessage = result2?.choices?.[0]?.message?.content || assistantMessage.content
+
+      setMessages((m) => m.map(msg => msg.id === thinkingId ? { ...msg, content: finalMessage } : msg))
+    } catch (err: any) {
+      setMessages((m) => m.map(msg => msg.id === thinkingId ? { ...msg, content: `Error: ${err?.message || err}` } : msg))
+    }
+  }
+
+  // Retain the local fallback generator for when no API key is available
+  const generateAIResponse = (message: string, userLocationArg: any, culturalActivitiesArg: any) => {
+    const lowerMessage = message.toLowerCase()
+    if (lowerMessage.includes('near me') || lowerMessage.includes('nearby')) {
+      if (userLocationArg && culturalActivitiesArg.length > 0) {
+        const nearbyList = culturalActivitiesArg.slice(0, 3).map((a: any) => `${a.name} (${a.distance || 'nearby'})`).join(', ')
+        return `Based on your current location, here are nearby cultural activities: ${nearbyList}. Would you like more details about any of these?`
+      } else {
+        return 'I need access to your location to show nearby activities. Please enable location services and refresh the page.'
+      }
+    } else if (lowerMessage.includes('activity') || lowerMessage.includes('what to do')) {
+      if (culturalActivitiesArg.length > 0) {
+        const top = culturalActivitiesArg.slice(0, 3).map((a: any) => `${a.name} (${a.distance || 'nearby'}, ${a.rating || '4.5'}★)`).join(', ')
+        return `Based on your location, I recommend: ${top}. These are all within walking distance!`
+      }
+      return 'I can help you with cultural activities and recommendations.'
+    }
+    return 'I can help you with information about cultural activities, local experiences, navigation, festivals, and creating personalized itineraries. Could you please be more specific about what you\'d like to know?'
   }
 
   return (
@@ -146,7 +202,7 @@ export default function AIGuideSection({ culturalActivities, userLocation }: AIG
             ))}
           </div>
 
-          <div className="flex space-x-4">
+            <div className="flex space-x-4">
             <input 
               type="text" 
               value={input}
@@ -155,7 +211,7 @@ export default function AIGuideSection({ culturalActivities, userLocation }: AIG
               className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors duration-200"
               onKeyDown={handleKeyDown}
             />
-            <button onClick={() => handleSend()} className="bg-primary text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
+            <button onClick={() => sendAIMessage()} className="bg-primary text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
               <i className="fas fa-paper-plane"></i>
               <span className="hidden md:inline">Send</span>
             </button>
