@@ -6,6 +6,17 @@ const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapCo
 const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false })
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false })
 const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false })
+// Helper to recenter map on state change
+const RecenterOnChange = dynamic(() => import('react-leaflet').then((m: any) => {
+  const { useMap } = m
+  return function Recenter({ center }: { center: [number, number] }) {
+    const map = useMap()
+    useEffect(() => {
+      map.setView(center)
+    }, [center, map])
+    return null
+  }
+}), { ssr: false })
 
 interface MapSectionProps {
   culturalActivities: any[]
@@ -15,6 +26,14 @@ interface MapSectionProps {
 
 export default function MapSection({ culturalActivities, userLocation, onAskAboutLocation }: MapSectionProps) {
   const [fullScreen, setFullScreen] = useState(false)
+  // Search UI state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchCategory, setSearchCategory] = useState('all')
+  // Map and data state
+  const [activities, setActivities] = useState<any[]>(culturalActivities || [])
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Initialize Leaflet icon configuration on client side only
   useEffect(() => {
@@ -30,8 +49,8 @@ export default function MapSection({ culturalActivities, userLocation, onAskAbou
     }
   }, [])
 
-  const centerLat = userLocation ? userLocation.lat : 40.7128
-  const centerLng = userLocation ? userLocation.lng : -74.0060
+  const centerLat = (mapCenter?.lat) ?? (userLocation ? userLocation.lat : 40.7128)
+  const centerLng = (mapCenter?.lng) ?? (userLocation ? userLocation.lng : -74.0060)
 
   const getDirections = (lat: number, lng: number) => {
     if (userLocation) {
@@ -45,9 +64,11 @@ export default function MapSection({ culturalActivities, userLocation, onAskAbou
   const MapContent = (
     <MapContainer
       center={[centerLat, centerLng]}
-      zoom={11}
+      zoom={12}
       style={{ height: '100%', width: '100%' }}
     >
+      {/* Keep map centered on state changes */}
+      <RecenterOnChange center={[centerLat, centerLng]} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -64,7 +85,7 @@ export default function MapSection({ culturalActivities, userLocation, onAskAbou
         </Marker>
       )}
 
-      {culturalActivities.map((activity) => (
+      {(activities || []).map((activity) => (
         <Marker key={activity.id} position={[activity.lat, activity.lng]}>
           <Popup>
             <div className="p-2">
@@ -108,6 +129,80 @@ export default function MapSection({ culturalActivities, userLocation, onAskAbou
           Full screen
         </button>
       </div>
+
+      {/* Search UI */}
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault()
+          if (!searchQuery.trim()) return
+          setLoading(true)
+          setError(null)
+          try {
+            const query = searchCategory && searchCategory !== 'all' ? `${searchQuery} ${searchCategory}` : searchQuery
+            const url = `https://google.serper.dev/places?q=${encodeURIComponent(query)}&apiKey=${encodeURIComponent(process.env.NEXT_PUBLIC_SERPER_API_KEY || '09481e5fd5692373f224976f48b76d8c79c24ba6')}`
+            const res = await fetch(url, { method: 'GET' })
+            if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+            const data = await res.json()
+            const places = Array.isArray(data?.places) ? data.places : []
+            const mapped = places.map((p: any) => ({
+              id: p.cid || `${p.latitude},${p.longitude},${p.title}`,
+              name: p.title,
+              description: p.address || p.category || '',
+              lat: p.latitude,
+              lng: p.longitude,
+              rating: p.rating,
+            }))
+            setActivities(mapped)
+            if (mapped.length) setMapCenter({ lat: mapped[0].lat, lng: mapped[0].lng })
+          } catch (err: any) {
+            setError(err?.message || 'Search failed')
+            setActivities([])
+          } finally {
+            setLoading(false)
+          }
+        }}
+        className="mb-6 flex flex-col md:flex-row items-stretch md:items-center gap-3"
+        aria-label="Map search"
+      >
+        <div className="flex-1">
+          <label htmlFor="map-search" className="sr-only">Search places</label>
+          <input
+            id="map-search"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search museums, galleries, events..."
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        <div className="w-full md:w-56">
+          <label htmlFor="map-category" className="sr-only">Category</label>
+          <select
+            id="map-category"
+            value={searchCategory}
+            onChange={(e) => setSearchCategory(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="all">All categories</option>
+            <option value="museum">Museums & Galleries</option>
+            <option value="performance">Performances</option>
+            <option value="experience">Local Experiences</option>
+            <option value="landmark">Landmarks</option>
+          </select>
+        </div>
+        <button
+          type="submit"
+          className="inline-flex items-center justify-center gap-2 bg-dark text-white px-4 py-2 rounded-lg hover:bg-black/80 disabled:opacity-60"
+          aria-label="Search"
+          disabled={loading}
+        >
+          <i className={`fas ${loading ? 'fa-circle-notch animate-spin' : 'fa-search'}`}></i>
+          <span className="font-medium">{loading ? 'Searching' : 'Search'}</span>
+        </button>
+        {error && (
+          <span className="text-sm text-red-600 md:ml-2">{error}</span>
+        )}
+      </form>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
@@ -169,6 +264,76 @@ export default function MapSection({ culturalActivities, userLocation, onAskAbou
               Exit full screen
             </button>
           </div>
+
+          {/* Fullscreen Search UI */}
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              if (!searchQuery.trim()) return
+              setLoading(true)
+              setError(null)
+              try {
+                const query = searchCategory && searchCategory !== 'all' ? `${searchQuery} ${searchCategory}` : searchQuery
+                const url = `https://google.serper.dev/places?q=${encodeURIComponent(query)}&apiKey=${encodeURIComponent(process.env.NEXT_PUBLIC_SERPER_API_KEY || '09481e5fd5692373f224976f48b76d8c79c24ba6')}`
+                const res = await fetch(url, { method: 'GET' })
+                if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+                const data = await res.json()
+                const places = Array.isArray(data?.places) ? data.places : []
+                const mapped = places.map((p: any) => ({
+                  id: p.cid || `${p.latitude},${p.longitude},${p.title}`,
+                  name: p.title,
+                  description: p.address || p.category || '',
+                  lat: p.latitude,
+                  lng: p.longitude,
+                  rating: p.rating,
+                }))
+                setActivities(mapped)
+                if (mapped.length) setMapCenter({ lat: mapped[0].lat, lng: mapped[0].lng })
+              } catch (err: any) {
+                setError(err?.message || 'Search failed')
+                setActivities([])
+              } finally {
+                setLoading(false)
+              }
+            }}
+            className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] w-[92%] md:w-[70%] lg:w-[50%] flex items-stretch gap-2"
+            aria-label="Map search fullscreen"
+          >
+            <label htmlFor="map-search-fullscreen" className="sr-only">Search places</label>
+            <input
+              id="map-search-fullscreen"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search museums, galleries, events..."
+              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 bg-white/95 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <label htmlFor="map-category-fullscreen" className="sr-only">Category</label>
+            <select
+              id="map-category-fullscreen"
+              value={searchCategory}
+              onChange={(e) => setSearchCategory(e.target.value)}
+              className="hidden md:block w-48 border border-gray-300 rounded-lg px-3 py-2 bg-white/95 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="all">All</option>
+              <option value="museum">Museums</option>
+              <option value="performance">Performances</option>
+              <option value="experience">Experiences</option>
+              <option value="landmark">Landmarks</option>
+            </select>
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center gap-2 bg-dark text-white px-4 py-2 rounded-lg hover:bg-black/80 shadow disabled:opacity-60"
+              disabled={loading}
+            >
+              <i className={`fas ${loading ? 'fa-circle-notch animate-spin' : 'fa-search'}`}></i>
+              <span className="font-medium hidden sm:inline">{loading ? 'Searching' : 'Search'}</span>
+            </button>
+            {error && (
+              <span className="text-sm text-red-600 ml-2 bg-white/80 px-2 py-1 rounded">{error}</span>
+            )}
+          </form>
+
           <div className="w-full h-full">
             {MapContent}
           </div>

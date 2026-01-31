@@ -71,7 +71,7 @@ export default function FloatingChat({ culturalActivities, userLocation, initial
 
     try {
       // Attempt to use OpenRouter (same as js/chat.js)
-      const apiKey = "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"
+      const apiKey = "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"
       if (!apiKey) {
         // Fallback to local generator if no key
         const fallback = generateAIResponse(text, userLocation ?? undefined as any, culturalActivities)
