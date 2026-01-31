@@ -95,7 +95,7 @@ export default function MapSection({ culturalActivities, userLocation, onAskAbou
               {activity.rating && <p className="text-sm text-yellow-600">Rating: {activity.rating}★</p>}
               <div className="mt-2 flex gap-2 flex-wrap">
                 <button 
-                  onClick={() => onAskAboutLocation?.(activity.name)}
+                  onClick={() => onAskAboutLocation?.(activity.name + "\nLOCATION: " + activity.description)}
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
                   Ask CulGuide
