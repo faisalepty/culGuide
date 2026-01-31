@@ -14,11 +14,12 @@ export default function Home() {
   const [activeSection, setActiveSection] = useState('home')
   const { userLocation, locationStatus, culturalActivities, getCurrentLocation } = useLocation()
   const [chatMessage, setChatMessage] = useState('')
+  const [isChatOpen, setIsChatOpen] = useState(false)
 
   const handleAskAboutLocation = (locationName: string) => {
     const message = `Tell me more about ${locationName}`
     setChatMessage(message)
-    setActiveSection('ai-guide')
+    setIsChatOpen(true)
   }
 
   return (
@@ -50,7 +51,13 @@ export default function Home() {
         <Footer setActiveSection={setActiveSection} />
 
         {/* Floating Chat Window */}
-        <FloatingChat culturalActivities={culturalActivities} userLocation={userLocation} initialMessage={chatMessage} />
+        <FloatingChat 
+          culturalActivities={culturalActivities} 
+          userLocation={userLocation} 
+          initialMessage={chatMessage}
+          isOpen={isChatOpen}
+          setIsOpen={setIsChatOpen}
+        />
       </div>
     </>
   )

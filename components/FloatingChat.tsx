@@ -18,10 +18,11 @@ interface FloatingChatProps {
   }>
   userLocation: { lat: number; lng: number } | null
   initialMessage?: string
+  isOpen: boolean
+  setIsOpen: (isOpen: boolean) => void
 }
 
-export default function FloatingChat({ culturalActivities, userLocation, initialMessage }: FloatingChatProps) {
-  const [isOpen, setIsOpen] = useState(false)
+export default function FloatingChat({ culturalActivities, userLocation, initialMessage, isOpen, setIsOpen }: FloatingChatProps) {
   const [messages, setMessages] = useState<Message[]>([{
     role: 'assistant',
     content: "Hello! I'm your AI tourist guide. I can help you discover cultural activities, local experiences, and provide navigation assistance. What would you like to know about your destination?"
