@@ -3,6 +3,7 @@ import Head from 'next/head'
 import Header from '../components/Header'
 import HeroSection from '../components/HeroSection'
 import AIGuideSection from '../components/AIGuideSection'
+import FloatingChat from '../components/FloatingChat'
 import MapSection from '../components/MapSection'
 import ActivitiesSection from '../components/ActivitiesSection'
 import AboutSection from '../components/AboutSection'
@@ -47,6 +48,9 @@ export default function Home() {
         </main>
 
         <Footer setActiveSection={setActiveSection} />
+
+        {/* Floating Chat Window */}
+        <FloatingChat culturalActivities={culturalActivities} userLocation={userLocation} initialMessage={chatMessage} />
       </div>
     </>
   )
